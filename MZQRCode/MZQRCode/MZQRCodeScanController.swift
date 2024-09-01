@@ -88,13 +88,53 @@ class MZQRCodeScanController: UIViewController, AVCaptureMetadataOutputObjectsDe
         if (self.session!.canAddOutput(self.output!)) {
             self.session?.addOutput(self.output!)
         }
-        self.output?.metadataObjectTypes = [.qr]
+        self.output?.metadataObjectTypes = [
+            .ean8,
+            .ean13,
+            .pdf417,
+            .code39,
+            .code93,
+            .code128,
+            .upce,
+            .aztec,
+            .qr,
+            .interleaved2of5,
+            .itf14,
+            .dataMatrix
+        ]
         self.output?.rectOfInterest = CGRect(x: 0, y: 0, width: 1, height: 1)
         
         self.preview = AVCaptureVideoPreviewLayer.init(session: self.session!)
         self.preview?.videoGravity = .resizeAspectFill
         self.preview?.frame = self.view.bounds
         self.view.layer.insertSublayer(self.preview!, at: 0)
+    }
+    
+    func configureAutoFocus() {
+        guard let device = self.device else { return }
+        
+        do {
+            try device.lockForConfiguration()
+            
+            // 设置自动对焦模式
+            if device.isFocusModeSupported(.continuousAutoFocus) {
+                device.focusMode = .continuousAutoFocus
+            }
+            
+            // 设置自动曝光模式
+            if device.isExposureModeSupported(.continuousAutoExposure) {
+                device.exposureMode = .continuousAutoExposure
+            }
+            
+            // 设置自动白平衡模式
+            if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
+                device.whiteBalanceMode = .continuousAutoWhiteBalance
+            }
+            
+            device.unlockForConfiguration()
+        } catch {
+            print("无法锁定设备进行配置: \(error)")
+        }
     }
     
     //MARK: - AVCaptureMetadataOutputObjectsDelegate
@@ -294,6 +334,8 @@ class MZQRCodeScanController: UIViewController, AVCaptureMetadataOutputObjectsDe
         self.isScaning = true
         self.preview?.session?.startRunning()
         self.startLineAnimation()
+        // 配置自动对焦
+        self.configureAutoFocus()
     }
     
     func stopScan() {
